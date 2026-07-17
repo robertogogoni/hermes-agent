@@ -216,8 +216,8 @@ TOOLSETS = {
     },
 
     "ledger": {
-        "description": "Unified interaction ledger search across all surfaces (WhatsApp, CLI, cron, webui, subagent)",
-        "tools": ["interactions_search"],
+        "description": "Unified interaction ledger search + write across all surfaces (WhatsApp, CLI, cron, webui, subagent)",
+        "tools": ["interactions_search", "interactions_write"],
         "includes": []
     },
 

@@ -92,17 +92,21 @@ def record_interaction(
     *,
     session_id=None,
     meta=None,
+    kind=None,
     hermes_home=None,
 ):
     """Insert one interaction row. Returns the new row id, or None on failure.
 
     Always safe to call from the hot path: never raises.
+
+    kind: optional explicit override (e.g. 'digest' for a self-audit row).
+    When None, kind is auto-classified from content.
     """
     try:
         content = content or ""
         urls = URL_RE.findall(content)
         urls_json = json.dumps(urls) if urls else None
-        kind = _classify_kind(content, bool(urls))
+        kind = kind or _classify_kind(content, bool(urls))
         ts = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
         meta_json = json.dumps(meta) if meta is not None else None
         with _LOCK:
