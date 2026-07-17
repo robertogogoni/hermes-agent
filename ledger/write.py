@@ -71,7 +71,12 @@ def _connect(explicit_home=None):
         # Backfill has not been run yet; nothing to write into.
         raise RuntimeError(f"interactions.db not found at {db}")
     _DB_PATH = db
-    _CONN = sqlite3.connect(db, timeout=5.0)
+    # Gateway and cron handlers execute on different worker threads.  Access
+    # to this shared process-level connection is serialized by _LOCK below,
+    # so allow the connection to cross thread boundaries.  Without this,
+    # the first writer thread "owns" the connection and every later cron /
+    # gateway thread fails with sqlite3.ProgrammingError.
+    _CONN = sqlite3.connect(db, timeout=5.0, check_same_thread=False)
     return _CONN
 
 

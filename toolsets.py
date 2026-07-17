@@ -59,8 +59,8 @@ _HERMES_CORE_TOOLS = [
     # off every CLI/messaging/cron schema (narrow waist).
     # Session history search
     "session_search",
-    # Unified interaction ledger search (WhatsApp/CLI/cron/webui/subagent)
-    "interactions_search",
+    # Unified interaction ledger search/write (WhatsApp/CLI/cron/webui/subagent)
+    "interactions_search", "interactions_write",
     # Clarifying questions
     "clarify",
     # Code execution + delegation

@@ -13,6 +13,7 @@ Timestamps are written as UTC ISO 8601 by the engine; callers pass the content
 and metadata, not the timestamp.
 """
 import json
+from datetime import datetime, timezone
 
 from tools.registry import registry, tool_result, tool_error
 
@@ -105,7 +106,14 @@ def _handle_interactions_write(args, **kw):
 
     if row_id is None:
         return tool_error("ledger write returned no row id (interactions.db missing or write failed)")
-    return tool_result({"row_id": row_id, "status": "written"})
+    # Give cursor-managing callers (notably digest crons) a canonical UTC value
+    # to copy verbatim instead of asking the model to calculate/format "now".
+    written_at_utc = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return tool_result({
+        "row_id": row_id,
+        "status": "written",
+        "written_at_utc": written_at_utc,
+    })
 
 
 registry.register(

@@ -71,10 +71,24 @@ def _to_utc_iso(value: str) -> str:
     """Convert an ISO 8601 string (offset or naive) to a UTC 'Z' string.
 
     Naive strings are interpreted in the user's configured timezone.
+
+    Tolerant of the formats LLM callers actually emit (space separator, a
+    trailing ' UTC' word, missing 'T'), not just strict ISO 8601. A parser
+    rejection here would surface as a tool error and let the caller wrongly
+    conclude "zero rows" — exactly the false-negative class this engine exists
+    to prevent — so we normalize before parsing.
     """
-    s = value.strip()
+    s = (value or "").strip()
     if not s:
         raise ValueError("empty timestamp")
+    # Normalize a trailing zone WORD (' UTC', ' GMT', ' Z') to a parseable form.
+    if s.endswith("UTC") or s.endswith("utc"):
+        s = s[: -len("UTC")].strip() + "Z"
+    elif s.endswith("GMT") or s.endswith("gmt"):
+        s = s[: -len("GMT")].strip() + "Z"
+    # Accept a space separator in place of 'T' (e.g. "2026-07-17 02:00:00").
+    if " " in s and "T" not in s:
+        s = s.replace(" ", "T", 1)
     dt = None
     parse_err = None
     # First try the full string (handles 'Z' as UTC in 3.11+).
