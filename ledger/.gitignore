@@ -1,0 +1,7 @@
+# Generated runtime DB (regenerable via build_interactions_db.py). Never committed.
+interactions.db
+interactions.db-wal
+interactions.db-shm
+*.db
+*.db-wal
+*.db-shm
