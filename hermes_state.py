@@ -2367,11 +2367,33 @@ class SessionDB:
         intentionally need to re-end a closed session with a new reason.
         """
         def _do(conn):
-            conn.execute(
+            cur = conn.execute(
                 "UPDATE sessions SET ended_at = ?, end_reason = ? "
                 "WHERE id = ? AND ended_at IS NULL",
                 (time.time(), end_reason, session_id),
             )
+            # Stage 2 CLI writer: when a session actually ends (first end wins),
+            # append one index row to the unified interaction ledger. Defensive:
+            # any ledger error is swallowed so session finalization is unaffected.
+            if cur.rowcount and session_id:
+                try:
+                    from ledger.write import record_interaction
+                    row = conn.execute(
+                        "SELECT source, title FROM sessions WHERE id = ?", (session_id,)
+                    ).fetchone()
+                    src = row[0] if row else "cli"
+                    title = (row[1] or "") if row else ""
+                    summary = title if title else f"CLI session {session_id} ended ({end_reason})"
+                    record_interaction(
+                        channel=src,
+                        direction="inbound",
+                        actor="user",
+                        content=f"[session summary] {summary}",
+                        session_id=session_id,
+                        meta={"origin": "cli_session_end", "end_reason": end_reason},
+                    )
+                except Exception as _le:  # pragma: no cover - ledger must never break finalize
+                    logger.debug("[ledger] cli session-end capture skipped: %s", _le)
         self._execute_write(_do)
 
     def reopen_session(self, session_id: str) -> None:

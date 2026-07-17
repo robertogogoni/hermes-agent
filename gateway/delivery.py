@@ -265,7 +265,33 @@ class DeliveryRouter:
             Dict with delivery results per target
         """
         results = {}
-        
+
+        # --- Stage 2 live writer: log outbound Hermes/cron messages into the
+        # unified interaction ledger. Defensive: never let a ledger failure
+        # affect delivery; all errors are swallowed in record_interaction. ---
+        try:
+            from ledger.write import record_interaction
+            for _t in targets:
+                if _t.platform == Platform.LOCAL:
+                    continue  # local saves to files, not a chat interaction
+                if not content or not content.strip():
+                    continue
+                _actor = "cron" if job_id else "hermes"
+                record_interaction(
+                    channel=_t.platform.value,
+                    direction="outbound",
+                    actor=_actor,
+                    content=content,
+                    session_id=job_id,
+                    meta={
+                        "origin": "gateway_outbound",
+                        "chat_id": _t.chat_id,
+                        "job_name": job_name,
+                    },
+                )
+        except Exception as _le:  # pragma: no cover - ledger must never break delivery
+            logger.debug("[ledger] outbound capture skipped: %s", _le)
+
         for target in targets:
             # Skip targets we've already proven permanently unreachable
             # (deleted group, blocked/kicked bot, deactivated user). Re-sending

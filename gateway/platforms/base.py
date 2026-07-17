@@ -4772,6 +4772,41 @@ class BasePlatformAdapter(ABC):
 
         coerce_plaintext_gateway_command(event)
 
+        # --- Stage 2 live writer: capture inbound user message into the
+        # unified interaction ledger BEFORE any processing. Defensive: a ledger
+        # failure must never block message delivery, so all errors are swallowed
+        # inside record_interaction and here. ---
+        try:
+            from ledger.write import record_interaction
+            _ch = getattr(event.source, "platform", None)
+            _ch = _ch.value if hasattr(_ch, "value") else (_ch or "whatsapp")
+            _uid = record_interaction(
+                channel=_ch,
+                direction="inbound",
+                actor="user",
+                content=event.text or "",
+                session_id=None,
+                meta={"origin": "gateway_inbound", "message_id": event.message_id},
+            )
+            if _uid is not None:
+                # Capture receipt: one per user message, never for Hermes' own.
+                # React if the adapter supports it; otherwise a minimal reply.
+                try:
+                    _receipt = f"captured #{_uid}"
+                    if hasattr(self, "react") and callable(self.react):
+                        await self.react(event.message_id, "✅")
+                    else:
+                        await self.send(
+                            chat_id=event.source.chat_id,
+                            content=_receipt,
+                            reply_to=event.message_id,
+                            metadata={"ledger_receipt": True},
+                        )
+                except Exception as _re:  # pragma: no cover - receipt is best-effort
+                    logger.debug("[ledger] receipt failed for #%s: %s", _uid, _re)
+        except Exception as _le:  # pragma: no cover - ledger must never break delivery
+            logger.debug("[ledger] inbound capture skipped: %s", _le)
+
         # Rewrite ``event.source.thread_id`` via the installed recovery hook
         # (Telegram DM topic mode) so the session key, guard checks, and
         # downstream delivery all agree on the same lane.
