@@ -59,6 +59,8 @@ _HERMES_CORE_TOOLS = [
     # off every CLI/messaging/cron schema (narrow waist).
     # Session history search
     "session_search",
+    # Unified interaction ledger search (WhatsApp/CLI/cron/webui/subagent)
+    "interactions_search",
     # Clarifying questions
     "clarify",
     # Code execution + delegation
@@ -210,6 +212,12 @@ TOOLSETS = {
     "memory": {
         "description": "Persistent memory across sessions (personal notes + user profile)",
         "tools": ["memory"],
+        "includes": []
+    },
+
+    "ledger": {
+        "description": "Unified interaction ledger search across all surfaces (WhatsApp, CLI, cron, webui, subagent)",
+        "tools": ["interactions_search"],
         "includes": []
     },
 
