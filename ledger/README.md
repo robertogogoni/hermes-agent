@@ -38,6 +38,11 @@ diverges from upstream. To keep this branch safe:
   data dir (outside the repo), so repo resets never touch captured data.
 - After each auto-update, rebase this branch onto the new `main`:
   `git -C <repo> fetch origin main && git -C <repo> rebase origin/main personal/ledger`
+- After rebasing, push with `--force-with-lease` (NEVER plain `--force`):
+  `git -C <repo> push --force-with-lease fork personal/ledger`
+  `--force-with-lease` refuses to overwrite the remote ref if someone else (or
+  another checkout) advanced it since your last fetch, preventing accidental
+  clobber of concurrent work. Plain `--force` skips that safety check.
 - Uncommitted work on `personal/ledger` would be at risk only if the live checkout
   were ever switched to it; we avoid that by keeping HEAD on `main`.
 
