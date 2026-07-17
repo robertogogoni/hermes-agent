@@ -61,6 +61,8 @@ _HERMES_CORE_TOOLS = [
     "session_search",
     # Unified interaction ledger search/write (WhatsApp/CLI/cron/webui/subagent)
     "interactions_search", "interactions_write",
+    # Derived knowledge layer: recall promoted facts + supervised promotion
+    "knowledge_search", "knowledge_promote",
     # Clarifying questions
     "clarify",
     # Code execution + delegation
@@ -216,9 +218,8 @@ TOOLSETS = {
     },
 
     "ledger": {
-        "description": "Unified interaction ledger search + write across all surfaces (WhatsApp, CLI, cron, webui, subagent)",
-        "tools": ["interactions_search", "interactions_write"],
-        "includes": []
+        "description": "Unified interaction ledger search + write, and the derived knowledge layer (recall promoted facts, supervise proposals) across all surfaces (WhatsApp, CLI, cron, webui, subagent)",
+        "tools": ["interactions_search", "interactions_write", "knowledge_search", "knowledge_promote"],
     },
 
     "context_engine": {
